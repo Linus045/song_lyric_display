@@ -8,28 +8,12 @@ from dotenv import load_dotenv
 from pygame.locals import color, Rect
 import spotify
 import genius
+import lyricRenderer 
+from colors import *
 
-# set up the colors
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-DARK_GREEN = (20, 100, 20)
-BLUE = (0, 0, 255)
-GREY = (30, 30, 30)
-LIGHT_GREY = (50, 50, 50)
-
+renderer = lyricRenderer.LyricRenderer()
 smallFont = None
 basicFont = None
-
-
-def renderMultilineString(text, font):
-    lines = text.split("\n")
-    labels = []
-    for line in lines:
-        labels.append(font.render(line, True, WHITE))
-    return labels
-
 
 def resizeScreen(newWidth, newHeight):
     global width, height, playingbarRect, windowSurface
@@ -52,6 +36,8 @@ def main():
     fontFile = "fonts/RobotoMono-Medium.ttf"
     smallFont = pygame.font.Font(fontFile, 18)
     basicFont = pygame.font.Font(fontFile, 30)
+
+    renderer.setFont(smallFont)
 
     # set up the window
     width = 800
@@ -115,7 +101,7 @@ def main():
                 textSong = basicFont.render(newSongName, True, WHITE, None)
                 textArtists = basicFont.render(spotify.getArtists(), True, WHITE, None)
                 lyrics = genius.getLyric(newSongName, spotify.getFirstArtist())
-                lines = renderMultilineString(lyrics, smallFont)
+                renderer.setLyric(lyrics)
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
 
@@ -128,18 +114,12 @@ def main():
             # draw the text onto the surface
             windowSurface.blit(textSong, textSongRect)
             windowSurface.blit(textArtists, textArtistsRect)
-            total_height = len(lines) * textLyricRect.height
-            cur_line = round(len(lines) * ratio)
-            for num, line in enumerate(lines):
-                rect = Rect(textLyricRect.left - 150, textLyricRect.top,
-                            textSong.get_rect().width, textLyricRect.height)
-                rect.top += num * textLyricRect.height + height / 2 - total_height/1 * ratio
-                if abs(num - cur_line) <= 2:
-                    pygame.draw.rect(windowSurface, RED, rect)
-                windowSurface.blit(line, rect)
 
-            pygame.draw.rect(windowSurface, LIGHT_GREY, playingbarRect)
+            #generate the lyric surface and draw it 
             ratio = timepassed_ms / songLength
+            lyricSurface = renderer.renderToSurface()
+            windowSurface.blit(lyricSurface, (150, height / 2 - renderer.height/1 * ratio))
+            pygame.draw.rect(windowSurface, LIGHT_GREY, playingbarRect)
             currentRect = Rect(playingbarRect.left, playingbarRect.top,
                                playingbarRect.width * ratio, playingbarRect.height)
             pygame.draw.rect(windowSurface, DARK_GREEN, currentRect)

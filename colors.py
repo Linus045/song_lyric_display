@@ -1,0 +1,9 @@
+# set up the colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+DARK_GREEN = (20, 100, 20)
+BLUE = (0, 0, 255)
+GREY = (30, 30, 30)
+LIGHT_GREY = (50, 50, 50)
