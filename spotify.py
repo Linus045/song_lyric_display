@@ -25,7 +25,6 @@ def getArtists():
     username = os.getenv("SPOTIPY_ACCOUNT_NAME")
     scope = 'user-library-read user-read-playback-state'
     token = util.prompt_for_user_token(username, scope)
-    songName = ""
     songArtists = ""
     if token:
         sp = spotipy.Spotify(auth=token)
@@ -45,7 +44,6 @@ def getFirstArtist():
     username = os.getenv("SPOTIPY_ACCOUNT_NAME")
     scope = 'user-library-read user-read-playback-state'
     token = util.prompt_for_user_token(username, scope)
-    songName = ""
     songArtists = ""
     if token:
         sp = spotipy.Spotify(auth=token)

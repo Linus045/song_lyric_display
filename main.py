@@ -4,10 +4,10 @@ import os
 import spotipy
 import spotipy.util as util
 import time
-from dotenv import *
-from pygame.locals import *
-from spotify import *
-from genius import *
+from dotenv import load_dotenv
+from pygame.locals import color, Rect
+import spotify
+import genius
 
 # set up the colors
 BLACK = (0, 0, 0)
@@ -40,12 +40,13 @@ def resizeScreen(newWidth, newHeight):
 
 
 def main():
-    global smallFont, basicFont, pygame, width, height, playingbarRect, windowSurface
+    global smallFont, basicFont, pygame
     # load env variables
     load_dotenv('.env')
 
     # set up pygame
-    pygame.init()
+    pygame.display.init()
+    pygame.font.init()
 
     # set up fonts
     fontFile = "fonts/RobotoMono-Medium.ttf"
@@ -79,7 +80,6 @@ def main():
     textLyricRect.centerx = 800/2
 
     oldSongName = ""
-    oldSongArtist = ""
 
     start = time.time()
     interval = 3
@@ -103,7 +103,7 @@ def main():
 
         if time.time() >= nextCheck:
             nextCheck += interval
-            newSongName, songLength = getSong()
+            newSongName, songLength = spotify.getSong()
 
             if newSongName == "":
                 textSong = basicFont.render("No song playing...", True, WHITE, None)
@@ -113,13 +113,13 @@ def main():
                 songActive = True
                 # TODO: request data in seperate thread so the program doesn't freeze
                 textSong = basicFont.render(newSongName, True, WHITE, None)
-                textArtists = basicFont.render(getArtists(), True, WHITE, None)
-                lyrics = getLyric(newSongName, getFirstArtist())
+                textArtists = basicFont.render(spotify.getArtists(), True, WHITE, None)
+                lyrics = genius.getLyric(newSongName, spotify.getFirstArtist())
                 lines = renderMultilineString(lyrics, smallFont)
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
 
-            startTime, timepassed_ms, isPlaying = getCurrentSongInfo()
+            startTime, timepassed_ms, isPlaying = spotify.getCurrentSongInfo()
         if songActive:
             # TODO: Set fixed framerate
             timeSince = time.time() - timeSongStart
@@ -149,12 +149,12 @@ def main():
         pygame.display.update()
 
         for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
+            if event.type == pygame.QUIT:
+                pygame.display.quit()
                 sys.exit(0)
             elif event.type == pygame.KEYDOWN:
                 if event.key == 'ESC':
-                    pygame.quit()
+                    pygame.display.quit()
                     sys.exit(0)
             elif event.type == pygame.VIDEORESIZE:
                 resizeScreen(event.w, event.h)
