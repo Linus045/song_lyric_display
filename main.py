@@ -10,6 +10,12 @@ import spotify
 import genius
 import lyricRenderer 
 from colors import *
+import win32gui
+import win32con
+import win32api
+
+# whether or not the background should be transparent
+showBackground = False
 
 renderer = lyricRenderer.LyricRenderer()
 smallFont = None
@@ -37,6 +43,12 @@ def main():
     # set window position
     #os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (width / 2, height / 2)
     windowSurface = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+    if not showBackground:
+        hwnd = pygame.display.get_wm_info()["window"]
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
+                            win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
+        win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*GREY), 0, win32con.LWA_COLORKEY)
+
     pygame.display.set_caption('Spotify Lyric Screen')
     pygame.mouse.set_visible(False)
 
