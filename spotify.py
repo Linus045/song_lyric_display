@@ -13,8 +13,9 @@ def getSong():
     if token:
         sp = spotipy.Spotify(auth=token)
         results = sp.current_user_playing_track()
-        songName = results['item']['name']
-        songLength = results['item']['duration_ms']
+        if results != None:
+            songName = results['item']['name']
+            songLength = results['item']['duration_ms']
     else:
         print("Can't get token for", username)
     return songName, songLength
@@ -29,12 +30,12 @@ def getArtists():
     if token:
         sp = spotipy.Spotify(auth=token)
         results = sp.current_user_playing_track()
-        songName = results['item']['name']
-        for num, artist in enumerate(results['item']['artists']):
-            if num == len(results['item']['artists']) - 1:
-                songArtists += "{}".format(artist['name'])
-            else:
-                songArtists += "{}, ".format(artist['name'])
+        if results:
+            for num, artist in enumerate(results['item']['artists']):
+                if num == len(results['item']['artists']) - 1:
+                    songArtists += "{}".format(artist['name'])
+                else:
+                    songArtists += "{}, ".format(artist['name'])
     else:
         print("Can't get token for", username)
     return songArtists
@@ -49,11 +50,11 @@ def getFirstArtist():
     if token:
         sp = spotipy.Spotify(auth=token)
         results = sp.current_user_playing_track()
-        songName = results['item']['name']
-        for num, artist in enumerate(results['item']['artists']):
-            if num == 0:
-                songArtists += "{}".format(artist['name'])
-                break
+        if results:
+            for num, artist in enumerate(results['item']['artists']):
+                if num == 0:
+                    songArtists += "{}".format(artist['name'])
+                    break
     else:
         print("Can't get token for", username)
     return songArtists
@@ -69,9 +70,10 @@ def getCurrentSongInfo():
     if token:
         sp = spotipy.Spotify(auth=token)
         results = sp.current_user_playing_track()
-        timestamp = results['timestamp']
-        progress_ms = results['progress_ms']
-        isPlaying = results['is_playing']
+        if results:
+            timestamp = results['timestamp']
+            progress_ms = results['progress_ms']
+            isPlaying = results['is_playing']
     else:
         print("Can't get token for", username)
     return timestamp, progress_ms, isPlaying

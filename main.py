@@ -104,7 +104,11 @@ def main():
         if time.time() >= nextCheck:
             nextCheck += interval
             newSongName, songLength = getSong()
-            if oldSongName != newSongName:
+
+            if newSongName == "":
+                textSong = basicFont.render("No song playing...", True, WHITE, None)
+                print("[Updated] No song playing...")
+            elif oldSongName != newSongName:
                 oldSongName = newSongName
                 songActive = True
                 # TODO: request data in seperate thread so the program doesn't freeze
@@ -140,6 +144,8 @@ def main():
                                playingbarRect.width * ratio, playingbarRect.height)
             pygame.draw.rect(windowSurface, DARK_GREEN, currentRect)
             # draw the window onto the screen
+        else:
+            windowSurface.blit(textSong, textSongRect)
         pygame.display.update()
 
         for event in pygame.event.get():
