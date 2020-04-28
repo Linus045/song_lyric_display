@@ -15,12 +15,18 @@ import win32con
 import win32api
 import urllib
 
-# whether or not the background should be transparent
-showBackground = False
+# Whether or not the background should be transparent
+showBackground = True
 
 renderer = lyricRenderer.LyricRenderer()
 smallFont = None
 basicFont = None
+
+def createMainSurface(width, height):
+    if showBackground:
+        return pygame.display.set_mode((width, height), pygame.RESIZABLE | pygame.HWACCEL, 32)
+    else:
+        return pygame.display.set_mode((width, height), pygame.RESIZABLE | pygame.HWACCEL | pygame.SRCALPHA, 32)
 
 def main():
     global smallFont, basicFont, pygame
@@ -39,11 +45,17 @@ def main():
     renderer.setFont(smallFont)
 
     # set up the window
-    width = 800
-    height = 600
+    width = 1200
+    height = 800
     # set window position
     #os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (width / 2, height / 2)
-    windowSurface = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+    windowSurface = createMainSurface(width, height)
+
+    titlePos = (20,20)
+    artistPos = (20,50)
+    coverPos = (20,100)
+    coverImgSize = (400,400)
+
     if not showBackground:
         hwnd = pygame.display.get_wm_info()["window"]
         win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
@@ -54,20 +66,9 @@ def main():
     pygame.mouse.set_visible(False)
 
     # set up the text
-    textSong = basicFont.render("Unknown", True, WHITE, None)
-    textSongRect = textSong.get_rect()
-    textSongRect.top = 15
-    textSongRect.left = 3
-
-    textArtists = basicFont.render("Unknown", True, WHITE, None)
-    textArtistsRect = textArtists.get_rect()
-    textArtistsRect.top = textSongRect.bottom + 2
-    textArtistsRect.left = 3
-
-    textLyric = smallFont.render("LYRICS:", True, WHITE, None)
-    textLyricRect = textLyric.get_rect()
-    textLyricRect.top = textArtistsRect.bottom + 4
-    textLyricRect.centerx = 800/2
+    textSong = None
+    textArtists = None
+    textLyric = None
 
     oldSongName = ""
 
@@ -76,13 +77,11 @@ def main():
     nextCheck = start + 1
 
     # run the game loop
-    lines = []
     startTime = 0
     timepassed_ms = 0
     isPlaying = False
     songLength = 300
 
-    playingbarRect = Rect(2, 2, width - 4, 6)
     ratio = 0
     songActive = False
     coverImg = None
@@ -97,20 +96,20 @@ def main():
             newSongName, songLength, songImgURl = spotify.getSong()
 
             if newSongName == "":
-                textSong = basicFont.render("No song playing...", True, WHITE, None)
+                songActive = False
                 print("[Updated] No song playing...")
             elif oldSongName != newSongName:
                 oldSongName = newSongName
                 songActive = True
                 # TODO: request data in seperate thread so the program doesn't freeze
-                textSong = basicFont.render(newSongName, True, WHITE, None)
-                textArtists = basicFont.render(spotify.getArtists(), True, WHITE, None)
+                textSong = basicFont.render(newSongName, True, SONG_TITLE_COLOR, None)
+                textArtists = basicFont.render(spotify.getArtists(), True, ARTIST_COLOR, None)
                 lyrics = genius.getLyric(newSongName, spotify.getFirstArtist())
                 renderer.setLyric(lyrics)
                 if songImgURl:
                     urllib.request.urlretrieve(songImgURl, "coverImg.jpg")
                     coverImg = pygame.image.load('coverImg.jpg')
-                    coverImg = pygame.transform.scale(coverImg, (200,200))
+                    coverImg = pygame.transform.scale(coverImg, coverImgSize)
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
 
@@ -121,25 +120,31 @@ def main():
             timepassed_ms += timeSince * 1000
             timeSongStart = time.time()
             # draw the text onto the surface
-            windowSurface.blit(textSong, textSongRect)
-            windowSurface.blit(textArtists, textArtistsRect)
+            windowSurface.blit(textSong, titlePos)
+            windowSurface.blit(textArtists, artistPos)
 
             #generate the lyric surface and draw it 
             ratio = timepassed_ms / songLength
             lyricSurface = renderer.renderToSurface()
-            windowSurface.blit(lyricSurface, (150, height / 2 - renderer.height/1 * ratio))
+            windowSurface.blit(lyricSurface, (coverPos[0] + coverImgSize[0] + 20, height / 2 - renderer.height/1 * ratio))
 
+            #draw the album cover image
             if coverImg:
-                windowSurface.blit(coverImg,(5, 110))
-            pygame.draw.rect(windowSurface, LIGHT_GREY, playingbarRect)
-            currentRect = Rect(playingbarRect.left, playingbarRect.top,
-                               playingbarRect.width * ratio, playingbarRect.height)
-            pygame.draw.rect(windowSurface, DARK_GREEN, currentRect)
-            # draw the window onto the screen
+                windowSurface.blit(coverImg, coverPos)
+
+            #draw the progress bar
+            playingbarRect = Rect(2, 2, width - 4, 6)
+            pygame.draw.rect(windowSurface, PLAYING_BAR_BACKGROUNDCOLOR, playingbarRect)
+            currentRect = Rect(playingbarRect.left, playingbarRect.top, playingbarRect.width * ratio, playingbarRect.height)
+            pygame.draw.rect(windowSurface, PLAYING_BAR_COLOR, currentRect)
         else:
-            windowSurface.blit(textSong, textSongRect)
+            textSong = basicFont.render("No song playing...", True, SONG_TITLE_COLOR, None)
+            windowSurface.blit(textSong, titlePos)
+
+        # update the window
         pygame.display.update()
 
+        #handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.display.quit()
@@ -152,7 +157,7 @@ def main():
                 width = event.w
                 height = event.h
                 playingbarRect = Rect(2, 2, width - 4, 6)
-                windowSurface = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+                windowSurface = createMainSurface(width, height)
 
 
 if __name__ == '__main__':

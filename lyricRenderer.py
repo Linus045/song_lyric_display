@@ -1,7 +1,6 @@
 from pygame.locals import Rect
 import pygame
-LYRIC_COLOR = (255,255,255)
-BACKGROUND_COLOR = (0,0,0)
+from colors import *
 
 class LyricRenderer():
     
@@ -21,7 +20,7 @@ class LyricRenderer():
             lineLength = self.lyricFont.size(line)[0]
             if lineLength > self.width:
                 self.width = lineLength
-            surfaces.append(self.lyricFont.render(line, True, LYRIC_COLOR))
+            surfaces.append(self.lyricFont.render(line, True, LYRICS_COLOR))
         self.height = len(lines) * self.lyricFont.get_height()
         return surfaces
 
@@ -32,7 +31,7 @@ class LyricRenderer():
 
     def renderToSurface(self):
         surface = pygame.Surface((self.width, self.height))
-        surface.set_colorkey(BACKGROUND_COLOR)
+        surface.set_colorkey(BLACK)
         for num, line in enumerate(self.lyrics_surfaces):
             rect = Rect(0, 0, *line.get_size())
             rect.top += num * self.lyricFont.get_height()
