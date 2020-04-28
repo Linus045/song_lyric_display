@@ -17,16 +17,22 @@ import urllib
 
 # Whether or not the background should be transparent
 showBackground = True
+showFrame = True
+startCentered = True
+startPosition = (0, 0) # requires startCentered to be False
+startSize = (800, 600)
 
 renderer = lyricRenderer.LyricRenderer()
 smallFont = None
 basicFont = None
 
 def createMainSurface(width, height):
-    if showBackground:
-        return pygame.display.set_mode((width, height), pygame.RESIZABLE | pygame.HWACCEL, 32)
+    flags = pygame.HWACCEL
+    if showFrame:
+        flags = flags | pygame.RESIZABLE
     else:
-        return pygame.display.set_mode((width, height), pygame.RESIZABLE | pygame.HWACCEL | pygame.SRCALPHA, 32)
+        flags = flags | pygame.NOFRAME
+    return pygame.display.set_mode((width, height), flags , 32)
 
 def main():
     global smallFont, basicFont, pygame
@@ -45,11 +51,15 @@ def main():
     renderer.setFont(smallFont)
 
     # set up the window
-    width = 1200
-    height = 800
-    # set window position
-    #os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (width / 2, height / 2)
+    width = startSize[0]
+    height = startSize[1]
+    # set window positionsurfa
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (startPosition[0], startPosition[1])
+    if startCentered:
+        os.environ['SDL_VIDEO_CENTERED'] = "1"
     windowSurface = createMainSurface(width, height)
+    # reset value so it doesn't get used when resizing the window later
+    os.environ['SDL_VIDEO_WINDOW_POS'] = ""
 
     titlePos = (20,20)
     artistPos = (20,50)
