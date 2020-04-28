@@ -150,7 +150,7 @@ def main():
                 pygame.display.quit()
                 sys.exit(0)
             elif event.type == pygame.KEYDOWN:
-                if event.key == 'ESC':
+                if event.key == pygame.K_ESCAPE:
                     pygame.display.quit()
                     sys.exit(0)
             elif event.type == pygame.VIDEORESIZE:
