@@ -15,14 +15,6 @@ renderer = lyricRenderer.LyricRenderer()
 smallFont = None
 basicFont = None
 
-def resizeScreen(newWidth, newHeight):
-    global width, height, playingbarRect, windowSurface
-    width = newWidth
-    height = newHeight
-    playingbarRect = Rect(2, 2, width - 4, 6)
-    windowSurface = pygame.display.set_mode((width, height), pygame.RESIZABLE)
-
-
 def main():
     global smallFont, basicFont, pygame
     # load env variables
@@ -47,7 +39,6 @@ def main():
     windowSurface = pygame.display.set_mode((width, height), pygame.RESIZABLE)
     pygame.display.set_caption('Spotify Lyric Screen')
     pygame.mouse.set_visible(False)
-    resizeScreen(width, height)
 
     # set up the text
     textSong = basicFont.render("Unknown", True, WHITE, None)
@@ -137,7 +128,10 @@ def main():
                     pygame.display.quit()
                     sys.exit(0)
             elif event.type == pygame.VIDEORESIZE:
-                resizeScreen(event.w, event.h)
+                width = event.w
+                height = event.h
+                playingbarRect = Rect(2, 2, width - 4, 6)
+                windowSurface = pygame.display.set_mode((width, height), pygame.RESIZABLE)
 
 
 if __name__ == '__main__':
