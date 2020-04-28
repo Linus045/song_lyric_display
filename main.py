@@ -13,6 +13,7 @@ from colors import *
 import win32gui
 import win32con
 import win32api
+import urllib
 
 # whether or not the background should be transparent
 showBackground = False
@@ -84,6 +85,7 @@ def main():
     playingbarRect = Rect(2, 2, width - 4, 6)
     ratio = 0
     songActive = False
+    coverImg = None
 
     timeSongStart = 0
     while True:
@@ -92,7 +94,7 @@ def main():
 
         if time.time() >= nextCheck:
             nextCheck += interval
-            newSongName, songLength = spotify.getSong()
+            newSongName, songLength, songImgURl = spotify.getSong()
 
             if newSongName == "":
                 textSong = basicFont.render("No song playing...", True, WHITE, None)
@@ -105,6 +107,10 @@ def main():
                 textArtists = basicFont.render(spotify.getArtists(), True, WHITE, None)
                 lyrics = genius.getLyric(newSongName, spotify.getFirstArtist())
                 renderer.setLyric(lyrics)
+                if songImgURl:
+                    urllib.request.urlretrieve(songImgURl, "coverImg.jpg")
+                    coverImg = pygame.image.load('coverImg.jpg')
+                    coverImg = pygame.transform.scale(coverImg, (200,200))
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
 
@@ -122,6 +128,9 @@ def main():
             ratio = timepassed_ms / songLength
             lyricSurface = renderer.renderToSurface()
             windowSurface.blit(lyricSurface, (150, height / 2 - renderer.height/1 * ratio))
+
+            if coverImg:
+                windowSurface.blit(coverImg,(5, 110))
             pygame.draw.rect(windowSurface, LIGHT_GREY, playingbarRect)
             currentRect = Rect(playingbarRect.left, playingbarRect.top,
                                playingbarRect.width * ratio, playingbarRect.height)

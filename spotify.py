@@ -10,15 +10,17 @@ def getSong():
     token = util.prompt_for_user_token(username, scope)
     songName = ""
     songLength = 0
+    songImgURl = None
     if token:
         sp = spotipy.Spotify(auth=token)
         results = sp.current_user_playing_track()
         if results != None:
             songName = results['item']['name']
             songLength = results['item']['duration_ms']
+            songImgURl = results['item']['album']['images'][0]['url']
     else:
         print("Can't get token for", username)
-    return songName, songLength
+    return songName, songLength, songImgURl
 
 
 def getArtists():
