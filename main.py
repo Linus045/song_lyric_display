@@ -143,7 +143,7 @@ def main():
                 windowSurface.blit(coverImg, coverPos)
 
             #draw the progress bar
-            playingbarRect = Rect(2, 2, width - 4, 6)
+            playingbarRect = Rect(20, height-20, width - 40, 6)
             pygame.draw.rect(windowSurface, PLAYING_BAR_BACKGROUNDCOLOR, playingbarRect)
             currentRect = Rect(playingbarRect.left, playingbarRect.top, playingbarRect.width * ratio, playingbarRect.height)
             pygame.draw.rect(windowSurface, PLAYING_BAR_COLOR, currentRect)
