@@ -60,6 +60,7 @@ def main():
     windowSurface = createMainSurface(width, height)
     # reset value so it doesn't get used when resizing the window later
     os.environ['SDL_VIDEO_WINDOW_POS'] = ""
+    pygame.event.post(pygame.event.Event(pygame.VIDEORESIZE, {'w': width, 'h':height}))
 
     titlePos = (20,20)
     artistPos = (20,50)
@@ -168,7 +169,7 @@ def main():
                 height = event.h
                 playingbarRect = Rect(2, 2, width - 4, 6)
                 windowSurface = createMainSurface(width, height)
-
+                renderer.setMaxWidth(width - (coverPos[0] + coverImgSize[0] + 20 + 80))
 
 if __name__ == '__main__':
     main()
