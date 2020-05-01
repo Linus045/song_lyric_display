@@ -43,6 +43,12 @@ def loadConfig():
             "startSize": {
                 "w":0,
                 "h":0
+            },
+            "lyric_fontsize":18,
+            "title_fontsize":30,
+            "cover_image_size": {
+                "w":400,
+                "h":400
             }
         }
         with path.open(mode='w') as settingsFile:
@@ -69,8 +75,9 @@ def main():
 
     # set up fonts
     fontFile = str(filePath.joinpath('fonts/RobotoMono-Medium.ttf'))
-    smallFont = pygame.font.Font(fontFile, 18)
-    basicFont = pygame.font.Font(fontFile, 30)
+
+    smallFont = pygame.font.Font(fontFile, config['lyric_fontsize'])
+    basicFont = pygame.font.Font(fontFile, config['title_fontsize'])
 
     renderer.setFont(smallFont)
 
@@ -93,7 +100,7 @@ def main():
     titlePos = (20,20)
     artistPos = (20,50)
     coverPos = (20,100)
-    coverImgSize = (400,400)
+    coverImgSize = (config['cover_image_size']['w'],config['cover_image_size']['h'])
 
     if config['transparentBackground']:
         hwnd = pygame.display.get_wm_info()["window"]
