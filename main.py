@@ -49,7 +49,8 @@ def loadConfig():
             "cover_image_size": {
                 "w":400,
                 "h":400
-            }
+            },
+            "show_mouse_cursor": False
         }
         with path.open(mode='w') as settingsFile:
             json.dump(config, settingsFile, indent=4)
@@ -109,7 +110,7 @@ def main():
         win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*GREY), 0, win32con.LWA_COLORKEY)
 
     pygame.display.set_caption('Spotify Lyric Screen')
-    pygame.mouse.set_visible(False)
+    pygame.mouse.set_visible(config['show_mouse_cursor'])
 
     # set up the text
     textSong = None
