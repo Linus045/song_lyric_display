@@ -15,32 +15,53 @@ import win32con
 import win32api
 import urllib
 import pathlib
+import json
 
-# Whether or not the background should be transparent
-showBackground = True
-showFrame = True
-startCentered = True
-startPosition = (0, 0) # requires startCentered to be False
-startSize = (800, 600)
-
+config = None
 renderer = lyricRenderer.LyricRenderer()
 smallFont = None
 basicFont = None
 
 filePath = pathlib.Path(__file__).parent.absolute()
 
+def loadConfig():
+    config = None
+    path = filePath.joinpath('config.json')
+    if path.exists():
+        with path.open(mode='r') as settingsFile:
+            config = json.load(settingsFile)
+    else:
+        print("No config.json exists. Creating a default one at ." + str(path))
+        config = {
+            "transparentBackground": False,
+            "showFrame": True,
+            "startCentered": True,
+            "startPosition": {
+                "x": 0,
+                "y": 0,
+            },
+            "startSize": {
+                "w":800,
+                "h":600
+            }
+        }
+        with path.open(mode='w') as settingsFile:
+            json.dump(config, settingsFile, indent=4)
+    return config
+
 def createMainSurface(width, height):
     flags = pygame.HWACCEL
-    if showFrame:
+    if config['showFrame']:
         flags = flags | pygame.RESIZABLE
     else:
         flags = flags | pygame.NOFRAME
     return pygame.display.set_mode((width, height), flags , 32)
 
 def main():
-    global smallFont, basicFont, pygame
+    global smallFont, basicFont, pygame, config
     # load env variables
     load_dotenv(str(filePath.joinpath('.env')))
+    config = loadConfig()
 
     # set up pygame
     pygame.display.init()
@@ -54,11 +75,11 @@ def main():
     renderer.setFont(smallFont)
 
     # set up the window
-    width = startSize[0]
-    height = startSize[1]
+    width = config['startSize']['w']
+    height = config['startSize']['w']
     # set window positionsurfa
-    os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (startPosition[0], startPosition[1])
-    if startCentered:
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (config['startPosition']['x'], config['startPosition']['y'])
+    if config['startCentered']:
         os.environ['SDL_VIDEO_CENTERED'] = "1"
     windowSurface = createMainSurface(width, height)
     # reset value so it doesn't get used when resizing the window later
@@ -70,7 +91,7 @@ def main():
     coverPos = (20,100)
     coverImgSize = (400,400)
 
-    if not showBackground:
+    if config['transparentBackground']:
         hwnd = pygame.display.get_wm_info()["window"]
         win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
                             win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
