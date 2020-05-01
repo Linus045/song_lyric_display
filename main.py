@@ -84,6 +84,7 @@ def main():
     windowSurface = createMainSurface(width, height)
     # reset value so it doesn't get used when resizing the window later
     os.environ['SDL_VIDEO_WINDOW_POS'] = ""
+    os.environ['SDL_VIDEO_CENTERED'] = ''
     pygame.event.post(pygame.event.Event(pygame.VIDEORESIZE, {'w': width, 'h':height}))
 
     titlePos = (20,20)
