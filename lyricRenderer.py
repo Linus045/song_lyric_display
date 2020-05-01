@@ -62,11 +62,12 @@ class LyricRenderer():
         self.maxWidth = max(maxWidth, 200)
         self.createSurfaces()
 
-    def renderToSurface(self):
+    def renderToSurface(self, bounds):
         surface = pygame.Surface((self.width, self.height))
         surface.set_colorkey(BLACK)
         for num, line in enumerate(self.lyrics_surfaces):
             rect = Rect(0, 0, *line.get_size())
             rect.top += num * self.lyricFont.get_height()
-            surface.blit(line, rect)
+            if bounds.contains(rect):
+                surface.blit(line, rect)
         return surface

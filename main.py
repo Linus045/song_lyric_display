@@ -162,8 +162,9 @@ def main():
 
             #generate the lyric surface and draw it 
             ratio = timepassed_ms / songLength
-            lyricSurface = renderer.renderToSurface()
-            windowSurface.blit(lyricSurface, (coverPos[0] + coverImgSize[0] + 20, height / 2 - renderer.height/1 * ratio))
+            heightOffset = height / 2 - renderer.height/1 * ratio
+            lyricSurface = renderer.renderToSurface(Rect(0, artistPos[1] + basicFont.get_height() - heightOffset, renderer.width, height - 120))
+            windowSurface.blit(lyricSurface, (coverPos[0] + coverImgSize[0] + 20, heightOffset))
 
             #draw the album cover image
             if coverImg:
