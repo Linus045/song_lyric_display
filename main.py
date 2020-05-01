@@ -10,12 +10,14 @@ import spotify
 import genius
 import lyricRenderer 
 from colors import *
-import win32gui
-import win32con
-import win32api
 import urllib
 import pathlib
 import json
+
+if sys.platform == 'win32':
+    import win32gui
+    import win32con
+    import win32api
 
 config = None
 renderer = lyricRenderer.LyricRenderer()
@@ -103,11 +105,12 @@ def main():
     coverPos = (20,100)
     coverImgSize = (config['cover_image_size']['w'],config['cover_image_size']['h'])
 
-    if config['transparentBackground']:
-        hwnd = pygame.display.get_wm_info()["window"]
-        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
-                            win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
-        win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*GREY), 0, win32con.LWA_COLORKEY)
+    if sys.platform == 'win32':
+        if config['transparentBackground']:
+            hwnd = pygame.display.get_wm_info()["window"]
+            win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
+                                win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
+            win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*GREY), 0, win32con.LWA_COLORKEY)
 
     pygame.display.set_caption('Spotify Lyric Screen')
     pygame.mouse.set_visible(config['show_mouse_cursor'])
