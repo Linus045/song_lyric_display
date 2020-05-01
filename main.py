@@ -76,7 +76,7 @@ def main():
 
     # set up the window
     width = config['startSize']['w']
-    height = config['startSize']['w']
+    height = config['startSize']['h']
     # set window positionsurfa
     os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (config['startPosition']['x'], config['startPosition']['y'])
     if config['startCentered']:
