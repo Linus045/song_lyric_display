@@ -41,8 +41,8 @@ def loadConfig():
                 "y": 0,
             },
             "startSize": {
-                "w":800,
-                "h":600
+                "w":0,
+                "h":0
             }
         }
         with path.open(mode='w') as settingsFile:
@@ -74,9 +74,12 @@ def main():
 
     renderer.setFont(smallFont)
 
+    displayInfo = pygame.display.Info()
+    width, height = displayInfo.current_w, displayInfo.current_h
     # set up the window
-    width = config['startSize']['w']
-    height = config['startSize']['h']
+    if config['startSize']['w'] > 0 and config['startSize']['h'] > 0:
+        width = config['startSize']['w']
+        height = config['startSize']['h']
     # set window positionsurfa
     os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (config['startPosition']['x'], config['startPosition']['y'])
     if config['startCentered']:
