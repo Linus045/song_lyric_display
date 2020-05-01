@@ -14,6 +14,7 @@ import win32gui
 import win32con
 import win32api
 import urllib
+import pathlib
 
 # Whether or not the background should be transparent
 showBackground = True
@@ -26,6 +27,8 @@ renderer = lyricRenderer.LyricRenderer()
 smallFont = None
 basicFont = None
 
+filePath = pathlib.Path(__file__).parent.absolute()
+
 def createMainSurface(width, height):
     flags = pygame.HWACCEL
     if showFrame:
@@ -37,14 +40,14 @@ def createMainSurface(width, height):
 def main():
     global smallFont, basicFont, pygame
     # load env variables
-    load_dotenv('.env')
+    load_dotenv(str(filePath.joinpath('.env')))
 
     # set up pygame
     pygame.display.init()
     pygame.font.init()
 
     # set up fonts
-    fontFile = "fonts/RobotoMono-Medium.ttf"
+    fontFile = str(filePath.joinpath('fonts/RobotoMono-Medium.ttf'))
     smallFont = pygame.font.Font(fontFile, 18)
     basicFont = pygame.font.Font(fontFile, 30)
 
@@ -118,8 +121,9 @@ def main():
                 lyrics = genius.getLyric(newSongName, spotify.getFirstArtist())
                 renderer.setLyric(lyrics)
                 if songImgURl:
-                    urllib.request.urlretrieve(songImgURl, "coverImg.jpg")
-                    coverImg = pygame.image.load('coverImg.jpg')
+                    imgPath = str(filePath.joinpath('coverImg.jpg'))
+                    urllib.request.urlretrieve(songImgURl, imgPath)
+                    coverImg = pygame.image.load(imgPath)
                     coverImg = pygame.transform.scale(coverImg, coverImgSize)
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
