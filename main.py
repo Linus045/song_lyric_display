@@ -13,6 +13,7 @@ from colors import *
 import urllib
 import pathlib
 import json
+import controlsRenderer
 
 if sys.platform == 'win32':
     import win32gui
@@ -104,6 +105,9 @@ def main():
     artistPos = (20,50)
     coverPos = (20,100)
     coverImgSize = (config['cover_image_size']['w'],config['cover_image_size']['h'])
+    controlsPos = (20, coverPos[1] + coverImgSize[1] + 10)
+
+    controls_renderer = controlsRenderer.ControlsRenderer(coverImgSize[0])
 
     if sys.platform == 'win32':
         if config['transparentBackground']:
@@ -131,6 +135,7 @@ def main():
     timepassed_ms = 0
     isPlaying = False
     songLength = 300
+    device_info = None
 
     ratio = 0
     songActive = False
@@ -140,6 +145,8 @@ def main():
     while True:
         # draw the white background onto the surface
         windowSurface.fill(GREY)
+        controlsSurface = controls_renderer.renderToSurface()
+        windowSurface.blit(controlsSurface, controlsPos)
 
         if time.time() >= nextCheck:
             nextCheck += interval
@@ -164,7 +171,8 @@ def main():
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
 
-            startTime, timepassed_ms, isPlaying = spotify.getCurrentSongInfo()
+            startTime, timepassed_ms, isPlaying, device_info = spotify.getCurrentSongInfo()
+            controls_renderer.songPlaying = isPlaying
         if songActive:
             # TODO: Set fixed framerate
             timeSince = time.time() - timeSongStart
@@ -211,6 +219,23 @@ def main():
                 playingbarRect = Rect(2, 2, width - 4, 6)
                 windowSurface = createMainSurface(width, height)
                 renderer.setMaxWidth(width - (coverPos[0] + coverImgSize[0] + 20 + 80))
+            elif event.type == pygame.MOUSEMOTION:
+                if songActive:
+                    mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
+                    controls_renderer.highlightPlaybutton = controls_renderer.playButtonRect.collidepoint(mouse_pos)
+                    controls_renderer.highlightPreviousbutton = controls_renderer.previousButtonRect.collidepoint(mouse_pos)
+                    controls_renderer.highlightNextbutton = controls_renderer.nextButtonRect.collidepoint(mouse_pos)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if songActive:
+                    mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
+                    if device_info:
+                        if controls_renderer.playButtonRect.collidepoint(mouse_pos):
+                            spotify.pauseOrResumeSong(device_info['id'], isPlaying)
+                            controls_renderer.songPlaying = not isPlaying
+                        elif controls_renderer.previousButtonRect.collidepoint(mouse_pos):
+                            spotify.nextOrPreviousSong(True)
+                        elif controls_renderer.nextButtonRect.collidepoint(mouse_pos):
+                            spotify.nextOrPreviousSong(False)
 
 if __name__ == '__main__':
     main()
