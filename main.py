@@ -178,8 +178,9 @@ def main():
 
             startTime, timepassed_ms, isPlaying, device_info = spotify.getCurrentSongInfo()
             controls_renderer.songPlaying = isPlaying
-            current_volume = device_info['volume_percent']
-            volume_slider_renderer.currentNormalized = current_volume/100
+            if device_info:
+                current_volume = device_info['volume_percent']
+                volume_slider_renderer.currentNormalized = current_volume/100
         if songActive:
             # TODO: Set fixed framerate
             timeSince = time.time() - timeSongStart

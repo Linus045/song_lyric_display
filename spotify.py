@@ -82,7 +82,10 @@ def setCurrentVolume(volume, device_id = None):
     volume = max(0, min(round(volume), 100))
     if token:
         sp = spotipy.Spotify(auth=token)
-        sp.volume(volume, device_id)
+        try:
+            sp.volume(volume, device_id)
+        except:
+            print("Can't change volume.")
     else:
         print("Can't get token for", username)
 
