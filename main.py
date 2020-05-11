@@ -14,6 +14,7 @@ import urllib
 import pathlib
 import json
 import controlsRenderer
+import sliderRenderer
 
 if sys.platform == 'win32':
     import win32gui
@@ -106,9 +107,10 @@ def main():
     coverPos = (20,100)
     coverImgSize = (config['cover_image_size']['w'],config['cover_image_size']['h'])
     controlsPos = (20, coverPos[1] + coverImgSize[1] + 10)
+    volumeSliderPos = (20, controlsPos[1] + 100 + 5)
 
     controls_renderer = controlsRenderer.ControlsRenderer(coverImgSize[0])
-
+    volume_slider_renderer = sliderRenderer.SliderRenderer(0.5, coverImgSize[0])
     if sys.platform == 'win32':
         if config['transparentBackground']:
             hwnd = pygame.display.get_wm_info()["window"]
@@ -142,11 +144,14 @@ def main():
     coverImg = None
 
     timeSongStart = 0
+    draggingVolumeSlider = False
     while True:
         # draw the white background onto the surface
         windowSurface.fill(GREY)
         controlsSurface = controls_renderer.renderToSurface()
         windowSurface.blit(controlsSurface, controlsPos)
+        volumeSurface = volume_slider_renderer.renderToSurface()
+        windowSurface.blit(volumeSurface, volumeSliderPos)
 
         if time.time() >= nextCheck:
             nextCheck += interval
@@ -173,6 +178,8 @@ def main():
 
             startTime, timepassed_ms, isPlaying, device_info = spotify.getCurrentSongInfo()
             controls_renderer.songPlaying = isPlaying
+            current_volume = device_info['volume_percent']
+            volume_slider_renderer.currentNormalized = current_volume/100
         if songActive:
             # TODO: Set fixed framerate
             timeSince = time.time() - timeSongStart
@@ -221,15 +228,22 @@ def main():
                 windowSurface = createMainSurface(width, height)
                 renderer.setMaxWidth(width - (coverPos[0] + coverImgSize[0] + 20 + 80))
             elif event.type == pygame.MOUSEMOTION:
+                if draggingVolumeSlider:
+                    volume_slider_renderer.update_value(mouse_pos[0])
                 if songActive:
                     mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
                     controls_renderer.highlightPlaybutton = controls_renderer.playButtonRect.collidepoint(mouse_pos)
                     controls_renderer.highlightPreviousbutton = controls_renderer.previousButtonRect.collidepoint(mouse_pos)
                     controls_renderer.highlightNextbutton = controls_renderer.nextButtonRect.collidepoint(mouse_pos)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if songActive:
-                    mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
+                if not draggingVolumeSlider:
+                    mouse_pos = (event.pos[0] - volumeSliderPos[0], event.pos[1] - volumeSliderPos[1]) 
+                    if volume_slider_renderer.borderRect.collidepoint(mouse_pos):
+                        volume_slider_renderer.update_value(mouse_pos[0])
+                        draggingVolumeSlider = True
+                if not draggingVolumeSlider and songActive:
                     if device_info:
+                        mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
                         if controls_renderer.playButtonRect.collidepoint(mouse_pos):
                             spotify.pauseOrResumeSong(device_info['id'], isPlaying)
                             isPlaying = not isPlaying
@@ -238,6 +252,12 @@ def main():
                             spotify.nextOrPreviousSong(True)
                         elif controls_renderer.nextButtonRect.collidepoint(mouse_pos):
                             spotify.nextOrPreviousSong(False)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                mouse_pos = (event.pos[0] - volumeSliderPos[0], event.pos[1] - volumeSliderPos[1])
+                if draggingVolumeSlider:
+                    volume = volume_slider_renderer.currentNormalized * 100
+                    spotify.setCurrentVolume(volume)
+                    draggingVolumeSlider = False
 
 if __name__ == '__main__':
     main()

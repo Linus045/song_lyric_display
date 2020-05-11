@@ -76,6 +76,15 @@ def getCurrentSongInfo():
         print("Can't get token for", username)
     return timestamp, progress_ms, isPlaying, device_info
 
+def setCurrentVolume(volume, device_id = None):
+    username = os.getenv("SPOTIPY_ACCOUNT_NAME")
+    token = util.prompt_for_user_token(username, scope)
+    volume = max(0, min(round(volume), 100))
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        sp.volume(volume, device_id)
+    else:
+        print("Can't get token for", username)
 
 def pauseOrResumeSong(device_id, is_playing):
     username = os.getenv("SPOTIPY_ACCOUNT_NAME")
