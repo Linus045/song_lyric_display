@@ -176,7 +176,8 @@ def main():
         if songActive:
             # TODO: Set fixed framerate
             timeSince = time.time() - timeSongStart
-            timepassed_ms += timeSince * 1000
+            if isPlaying:
+                timepassed_ms += timeSince * 1000
             timeSongStart = time.time()
             # draw the text onto the surface
             windowSurface.blit(textSong, titlePos)
@@ -231,7 +232,8 @@ def main():
                     if device_info:
                         if controls_renderer.playButtonRect.collidepoint(mouse_pos):
                             spotify.pauseOrResumeSong(device_info['id'], isPlaying)
-                            controls_renderer.songPlaying = not isPlaying
+                            isPlaying = not isPlaying
+                            controls_renderer.songPlaying = isPlaying
                         elif controls_renderer.previousButtonRect.collidepoint(mouse_pos):
                             spotify.nextOrPreviousSong(True)
                         elif controls_renderer.nextButtonRect.collidepoint(mouse_pos):
