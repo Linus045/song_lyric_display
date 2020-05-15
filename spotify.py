@@ -115,6 +115,32 @@ def nextOrPreviousSong(previousSong):
             else:
                 result = sp.next_track()
         except:
-            print("Can't change song.", e)
+            print("Can't change song.")
+    else:
+        print("Can't get token for", username)
+
+
+def getAvailableDevices():
+    username = os.getenv("SPOTIPY_ACCOUNT_NAME")
+    token = util.prompt_for_user_token(username, scope)
+    devices = []
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        try:
+            return sp.devices()['devices']
+        except:
+            print("Can't get devices.")
+    else:
+        print("Can't get token for", username)
+
+def set_to_device(device):
+    username = os.getenv("SPOTIPY_ACCOUNT_NAME")
+    token = util.prompt_for_user_token(username, scope)
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        try:
+            sp.transfer_playback(device['id'])
+        except:
+            print("Can't connect to device.")
     else:
         print("Can't get token for", username)

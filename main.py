@@ -15,6 +15,7 @@ import pathlib
 import json
 import controlsRenderer
 import sliderRenderer
+import devices_renderer
 
 if sys.platform == 'win32':
     import win32gui
@@ -108,9 +109,14 @@ def main():
     coverImgSize = (config['cover_image_size']['w'],config['cover_image_size']['h'])
     controlsPos = (20, coverPos[1] + coverImgSize[1] + 10)
     volumeSliderPos = (20, controlsPos[1] + 100 + 5)
+    devicesSelectorPos = (20, volumeSliderPos[1] + 30)
 
     controls_renderer = controlsRenderer.ControlsRenderer(coverImgSize[0])
     volume_slider_renderer = sliderRenderer.SliderRenderer(0.5, coverImgSize[0])
+
+    device_font = pygame.font.Font(fontFile, 14)
+    device_selector_renderer = devices_renderer.DeviceSelectorRenderer(coverImgSize[0], height - devicesSelectorPos[1], device_font)
+
     if sys.platform == 'win32':
         if config['transparentBackground']:
             hwnd = pygame.display.get_wm_info()["window"]
@@ -152,6 +158,8 @@ def main():
         windowSurface.blit(controlsSurface, controlsPos)
         volumeSurface = volume_slider_renderer.renderToSurface()
         windowSurface.blit(volumeSurface, volumeSliderPos)
+        deviceSelectorSurface = device_selector_renderer.renderToSurface(isPlaying)
+        windowSurface.blit(deviceSelectorSurface, devicesSelectorPos)
 
         if time.time() >= nextCheck:
             nextCheck += interval
@@ -175,6 +183,10 @@ def main():
                     coverImg = pygame.transform.scale(coverImg, coverImgSize)
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
+
+            devices = spotify.getAvailableDevices()
+            if devices:
+                device_selector_renderer.devices = devices
 
             startTime, timepassed_ms, isPlaying, device_info = spotify.getCurrentSongInfo()
             controls_renderer.songPlaying = isPlaying
@@ -254,11 +266,19 @@ def main():
                         elif controls_renderer.nextButtonRect.collidepoint(mouse_pos):
                             spotify.nextOrPreviousSong(False)
             elif event.type == pygame.MOUSEBUTTONUP:
-                mouse_pos = (event.pos[0] - volumeSliderPos[0], event.pos[1] - volumeSliderPos[1])
                 if draggingVolumeSlider:
+                    mouse_pos = (event.pos[0] - volumeSliderPos[0], event.pos[1] - volumeSliderPos[1])
                     volume = volume_slider_renderer.currentNormalized * 100
-                    spotify.setCurrentVolume(volume)
+                    if device_info:
+                        spotify.setCurrentVolume(volume, device_info['id'])
                     draggingVolumeSlider = False
+                else:
+                    mouse_pos = (event.pos[0] - devicesSelectorPos[0], event.pos[1] - devicesSelectorPos[1])
+                    for device in device_selector_renderer.devices:
+                        if 'hitbox' in device:
+                            if device['hitbox'].collidepoint(mouse_pos):
+                                spotify.set_to_device(device)
+
 
 if __name__ == '__main__':
     main()
