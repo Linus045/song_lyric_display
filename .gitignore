@@ -141,3 +141,4 @@ cython_debug/
 
 coverImg.jpg
 config.json
+colors.json

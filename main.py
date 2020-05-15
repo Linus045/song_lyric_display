@@ -9,7 +9,7 @@ from pygame.locals import color, Rect
 import spotify
 import genius
 import lyricRenderer 
-from colors import *
+import colors
 import urllib
 import pathlib
 import json
@@ -23,7 +23,8 @@ if sys.platform == 'win32':
     import win32api
 
 config = None
-renderer = lyricRenderer.LyricRenderer()
+color_file = colors.Colors()
+renderer = lyricRenderer.LyricRenderer(color_file)
 smallFont = None
 basicFont = None
 
@@ -70,10 +71,11 @@ def createMainSurface(width, height):
     return pygame.display.set_mode((width, height), flags , 32)
 
 def main():
-    global smallFont, basicFont, pygame, config
+    global smallFont, basicFont, pygame, config, color_file
     # load env variables
     load_dotenv(str(filePath.joinpath('.env')))
     config = loadConfig()
+    color_file.loadColors(filePath)
 
     # set up pygame
     pygame.display.init()
@@ -111,18 +113,18 @@ def main():
     volumeSliderPos = (20, controlsPos[1] + 100 + 5)
     devicesSelectorPos = (20, volumeSliderPos[1] + 30)
 
-    controls_renderer = controlsRenderer.ControlsRenderer(coverImgSize[0])
-    volume_slider_renderer = sliderRenderer.SliderRenderer(0.5, coverImgSize[0])
+    controls_renderer = controlsRenderer.ControlsRenderer(color_file, coverImgSize[0])
+    volume_slider_renderer = sliderRenderer.SliderRenderer(color_file, 0.5, coverImgSize[0])
 
     device_font = pygame.font.Font(fontFile, 14)
-    device_selector_renderer = devices_renderer.DeviceSelectorRenderer(coverImgSize[0], height - devicesSelectorPos[1], device_font)
+    device_selector_renderer = devices_renderer.DeviceSelectorRenderer(color_file,coverImgSize[0], height - devicesSelectorPos[1], device_font)
 
     if sys.platform == 'win32':
         if config['transparentBackground']:
             hwnd = pygame.display.get_wm_info()["window"]
             win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
                                 win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
-            win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*GREY), 0, win32con.LWA_COLORKEY)
+            win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*color_file.getColor('BACKGROUND')), 0, win32con.LWA_COLORKEY)
 
     pygame.display.set_caption('Spotify Lyric Screen')
     pygame.mouse.set_visible(config['show_mouse_cursor'])
@@ -153,7 +155,7 @@ def main():
     draggingVolumeSlider = False
     while True:
         # draw the white background onto the surface
-        windowSurface.fill(GREY)
+        windowSurface.fill(color_file.getColor('BACKGROUND'))
         controlsSurface = controls_renderer.renderToSurface()
         windowSurface.blit(controlsSurface, controlsPos)
         volumeSurface = volume_slider_renderer.renderToSurface()
@@ -172,8 +174,8 @@ def main():
                 oldSongName = newSongName
                 songActive = True
                 # TODO: request data in seperate thread so the program doesn't freeze
-                textSong = basicFont.render(newSongName, True, SONG_TITLE_COLOR, None)
-                textArtists = basicFont.render(spotify.getArtists(), True, ARTIST_COLOR, None)
+                textSong = basicFont.render(newSongName, True, color_file.getColor('player.title'), None)
+                textArtists = basicFont.render(spotify.getArtists(), True, color_file.getColor('player.artist'), None)
                 lyrics = genius.getLyric(newSongName, spotify.getFirstArtist())
                 renderer.setLyric(lyrics)
                 if songImgURl:
@@ -215,11 +217,11 @@ def main():
 
             #draw the progress bar
             playingbarRect = Rect(20, height-20, width - 40, 6)
-            pygame.draw.rect(windowSurface, PLAYING_BAR_BACKGROUNDCOLOR, playingbarRect)
+            pygame.draw.rect(windowSurface, color_file.getColor('player.playingbar.background'), playingbarRect)
             currentRect = Rect(playingbarRect.left, playingbarRect.top, playingbarRect.width * ratio, playingbarRect.height)
-            pygame.draw.rect(windowSurface, PLAYING_BAR_COLOR, currentRect)
+            pygame.draw.rect(windowSurface, color_file.getColor('player.playingbar'), currentRect)
         else:
-            textSong = basicFont.render("No song playing...", True, SONG_TITLE_COLOR, None)
+            textSong = basicFont.render("No song playing...", True, color_file.getColor('player.lyrics'), None)
             windowSurface.blit(textSong, titlePos)
 
         # update the window
