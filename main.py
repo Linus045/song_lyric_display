@@ -57,7 +57,8 @@ def loadConfig():
                 "w":400,
                 "h":400
             },
-            "show_mouse_cursor": False
+            "show_mouse_cursor": False,
+            "showOnTopSlider":'album'
         }
         with path.open(mode='w') as settingsFile:
             json.dump(config, settingsFile, indent=4)
@@ -158,6 +159,8 @@ def main():
     timeSongStart = 0
     draggingVolumeSlider = False
     recently_played_songs = None
+    albumURI = ""
+    album = None
     while True:
         # draw the white background onto the surface
         windowSurface.fill(color_file.getColor('BACKGROUND'))
@@ -172,7 +175,7 @@ def main():
         windowSurface.blit(recentlyPlayedSongsSurface, recentlyPlayedSongsPos)
         if time.time() >= nextCheck:
             nextCheck += interval
-            newSongName, songLength, songImgURl = spotify.getSong()
+            newSongName, songLength, songImgURl, albumURI = spotify.getSong()
 
             if newSongName == "":
                 songActive = False
@@ -192,16 +195,24 @@ def main():
                     coverImg = pygame.transform.scale(coverImg, coverImgSize)
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
-                recently_played_songs = spotify.get_top_list()
+                if config['showOnTopSlider'] == 'album' and albumURI:
+                    album = spotify.get_album(albumURI)
+                    if album['album_type'] == 'single':
+                        recently_played_songs = spotify.get_recently_played()
+                    else:
+                        recently_played_songs = album['tracks']['items']
+                elif config['showOnTopSlider'] == 'top_tracks':
+                    recently_played_songs = spotify.get_top_list()
+                
                 if recently_played_songs:
                     recent_songs_renderer.recently_played_songs = recently_played_songs
+                recent_songs_renderer.time = 0
 
                 labelWidth = max(titlePos[0] + textSong.get_width(), artistPos[0] + textArtists.get_width())
                 xPos = max(coverPos[0] + coverImgSize[0] + 20, labelWidth)
                 minWidth = width - xPos
                 recent_songs_renderer.setWidth(minWidth)
                 recentlyPlayedSongsPos = (xPos, recentlyPlayedSongsPos[1])
-                
             devices = spotify.getAvailableDevices()
             if devices:
                 device_selector_renderer.devices = devices

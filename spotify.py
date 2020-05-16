@@ -10,6 +10,7 @@ def getSong():
     songName = ""
     songLength = 0
     songImgURl = None
+    albumURI = ""
     if token:
         sp = spotipy.Spotify(auth=token)
         results = sp.current_user_playing_track()
@@ -18,9 +19,10 @@ def getSong():
                 songName = results['item']['name']
                 songLength = results['item']['duration_ms']
                 songImgURl = results['item']['album']['images'][0]['url']
+                albumURI = results['item']['album']['id']
     else:
         print("Can't get token for", username)
-    return songName, songLength, songImgURl
+    return songName, songLength, songImgURl, albumURI
 
 
 def getArtists():
@@ -200,5 +202,18 @@ def queue_song(song_uri):
             sp.add_to_queue(song_uri)
         except:
             print("Error queueing song.")
+    else:
+        print("Can't get token for", username)
+
+def get_album(album_uri):
+    username = os.getenv("SPOTIPY_ACCOUNT_NAME")
+    token = util.prompt_for_user_token(username, scope)
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        try:
+            album = sp.album(album_uri)
+            return album
+        except:
+            print("Error retrieving album.")
     else:
         print("Can't get token for", username)

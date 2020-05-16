@@ -76,9 +76,18 @@ class RecentSongsRenderer:
                 if songIdx < len(self.recently_played_songs):
                     xOffset = (self.boxWidth + 5) * songIdx - (self.time % (len(self.recently_played_songs) * (self.boxWidth + 5) - self.width))
                     song = self.recently_played_songs[songIdx]
-                    songname = song['name']
-                    artists = song['artists']
-                    song_uri = song['id']
+                    songname = ''
+                    artists = []
+                    song_uri = ''
+                    if 'name' in song:
+                        songname = song['name']
+                        artists = song['artists']
+                        song_uri = song['id']
+                    elif 'track' in song:
+                        songname = song['track']['name']
+                        artists = song['track']['artists']
+                        song_uri = song['track']['id']
+
 
                     artistsString = ''
                     for idx, artist in enumerate(artists):
