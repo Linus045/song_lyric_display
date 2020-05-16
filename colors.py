@@ -38,6 +38,10 @@ class Colors():
                     'devices.highlighted':[80, 80, 80],
                     'devices.soundbar':[255, 120, 120],
                     'devices.text':[20, 20, 20],
+                    'recentlyplayed.background':[50, 50, 50],
+                    'recentlyplayed.highlighted':[80, 80, 80],
+                    'recentlyplayed.text.title':[180, 180, 180],
+                    'recentlyplayed.text.artist':[180, 180, 180],
                 }
                 json.dump(json_colors, color_file, indent=4)
         for key in json_colors:

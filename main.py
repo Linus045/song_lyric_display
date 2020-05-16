@@ -16,6 +16,7 @@ import json
 import controlsRenderer
 import sliderRenderer
 import devices_renderer
+import recentSongsRenderer
 
 if sys.platform == 'win32':
     import win32gui
@@ -112,9 +113,12 @@ def main():
     controlsPos = (20, coverPos[1] + coverImgSize[1] + 10)
     volumeSliderPos = (20, controlsPos[1] + 100 + 5)
     devicesSelectorPos = (20, volumeSliderPos[1] + 30)
+    recentlyPlayedSongsPos = (coverPos[0] + coverImgSize[0] + 20, 30)
 
     controls_renderer = controlsRenderer.ControlsRenderer(color_file, coverImgSize[0])
     volume_slider_renderer = sliderRenderer.SliderRenderer(color_file, 0.5, coverImgSize[0])
+    recent_songs_font = pygame.font.Font(fontFile, 14)
+    recent_songs_renderer = recentSongsRenderer.RecentSongsRenderer(color_file, 50, width - coverImgSize[0], recent_songs_font)
 
     device_font = pygame.font.Font(fontFile, 14)
     device_selector_renderer = devices_renderer.DeviceSelectorRenderer(color_file,coverImgSize[0], height - devicesSelectorPos[1], device_font)
@@ -153,6 +157,7 @@ def main():
 
     timeSongStart = 0
     draggingVolumeSlider = False
+    recently_played_songs = None
     while True:
         # draw the white background onto the surface
         windowSurface.fill(color_file.getColor('BACKGROUND'))
@@ -163,6 +168,8 @@ def main():
         deviceSelectorSurface = device_selector_renderer.renderToSurface(isPlaying)
         windowSurface.blit(deviceSelectorSurface, devicesSelectorPos)
 
+        recentlyPlayedSongsSurface = recent_songs_renderer.renderToSurface()
+        windowSurface.blit(recentlyPlayedSongsSurface, recentlyPlayedSongsPos)
         if time.time() >= nextCheck:
             nextCheck += interval
             newSongName, songLength, songImgURl = spotify.getSong()
@@ -185,6 +192,9 @@ def main():
                     coverImg = pygame.transform.scale(coverImg, coverImgSize)
                 print("[Updated] {}".format(newSongName))
                 timeSongStart = time.time()
+                recently_played_songs = spotify.get_top_list()
+                if recently_played_songs:
+                    recent_songs_renderer.recently_played_songs = recently_played_songs
 
             devices = spotify.getAvailableDevices()
             if devices:
@@ -250,6 +260,14 @@ def main():
                     controls_renderer.highlightPlaybutton = controls_renderer.playButtonRect.collidepoint(mouse_pos)
                     controls_renderer.highlightPreviousbutton = controls_renderer.previousButtonRect.collidepoint(mouse_pos)
                     controls_renderer.highlightNextbutton = controls_renderer.nextButtonRect.collidepoint(mouse_pos)
+
+                    mouse_pos = (event.pos[0] - recentlyPlayedSongsPos[0], event.pos[1] - recentlyPlayedSongsPos[1])
+                    highlightedBoxIndex = -1
+                    hitBox = recent_songs_renderer.checkMouseHit(mouse_pos)
+                    if hitBox:
+                        if 'index' in hitBox:
+                            highlightedBoxIndex = hitBox['index']
+                    recent_songs_renderer.highlightedIdx = highlightedBoxIndex
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if not draggingVolumeSlider:
                     mouse_pos = (event.pos[0] - volumeSliderPos[0], event.pos[1] - volumeSliderPos[1]) 
@@ -281,6 +299,10 @@ def main():
                             if device['hitbox'].collidepoint(mouse_pos):
                                 spotify.set_to_device(device)
 
+                    mouse_pos = (event.pos[0] - recentlyPlayedSongsPos[0], event.pos[1] - recentlyPlayedSongsPos[1])
+                    clicked_box = recent_songs_renderer.checkMouseHit(mouse_pos)
+                    if clicked_box:
+                        recent_songs_renderer.boxClicked(clicked_box, event.button)
 
 if __name__ == '__main__':
     main()

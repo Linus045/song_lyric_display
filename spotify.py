@@ -3,7 +3,7 @@ import spotipy
 import spotipy.util as util
 import os
 
-scope = 'user-library-read user-read-playback-state user-modify-playback-state'
+scope = 'user-library-read user-read-playback-state user-modify-playback-state user-read-recently-played user-top-read'
 def getSong():
     username = os.getenv("SPOTIPY_ACCOUNT_NAME")
     token = util.prompt_for_user_token(username, scope)
@@ -143,5 +143,62 @@ def set_to_device(device):
             sp.transfer_playback(device['id'])
         except:
             print("Can't connect to device.")
+    else:
+        print("Can't get token for", username)
+
+def get_recently_played():
+    username = os.getenv("SPOTIPY_ACCOUNT_NAME")
+    token = util.prompt_for_user_token(username, scope)
+    recently_played_songs = None
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        try:
+            recently_played_songs = sp.current_user_recently_played()
+            if recently_played_songs['items']:
+                return recently_played_songs['items']
+        except:
+            print("Error retrieving recently played songs.")
+    else:
+        print("Can't get token for", username)
+
+def get_cover_url(track_id):
+    username = os.getenv("SPOTIPY_ACCOUNT_NAME")
+    token = util.prompt_for_user_token(username, scope)
+    songImgURl = None
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        try:
+            track = sp.track(track_id)
+            if track and track['album']:
+                songImgURl = track['album']['images'][0]['url']
+                return songImgURl
+        except:
+            print("Error retrieving track album cover image.")
+    else:
+        print("Can't get token for", username)
+
+def get_top_list(time_range='medium_term'):
+    username = os.getenv("SPOTIPY_ACCOUNT_NAME")
+    token = util.prompt_for_user_token(username, scope)
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        try:
+            tracks = sp.current_user_top_tracks(time_range=time_range)
+            if tracks['items']:
+                return tracks['items']
+        except:
+            print("Error retrieving top list.")
+    else:
+        print("Can't get token for", username)
+
+def queue_song(song_uri):
+    username = os.getenv("SPOTIPY_ACCOUNT_NAME")
+    token = util.prompt_for_user_token(username, scope)
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        try:
+            sp.add_to_queue(song_uri)
+        except:
+            print("Error queueing song.")
     else:
         print("Can't get token for", username)
