@@ -113,7 +113,7 @@ def main():
     controlsPos = (20, coverPos[1] + coverImgSize[1] + 10)
     volumeSliderPos = (20, controlsPos[1] + 100 + 5)
     devicesSelectorPos = (20, volumeSliderPos[1] + 30)
-    recentlyPlayedSongsPos = (coverPos[0] + coverImgSize[0] + 20, 30)
+    recentlyPlayedSongsPos = (0, 30) #x position will get calculated later
 
     controls_renderer = controlsRenderer.ControlsRenderer(color_file, coverImgSize[0])
     volume_slider_renderer = sliderRenderer.SliderRenderer(color_file, 0.5, coverImgSize[0])
@@ -196,6 +196,12 @@ def main():
                 if recently_played_songs:
                     recent_songs_renderer.recently_played_songs = recently_played_songs
 
+                labelWidth = max(titlePos[0] + textSong.get_width(), artistPos[0] + textArtists.get_width())
+                xPos = max(coverPos[0] + coverImgSize[0] + 20, labelWidth)
+                minWidth = width - xPos
+                recent_songs_renderer.setWidth(minWidth)
+                recentlyPlayedSongsPos = (xPos, recentlyPlayedSongsPos[1])
+                
             devices = spotify.getAvailableDevices()
             if devices:
                 device_selector_renderer.devices = devices

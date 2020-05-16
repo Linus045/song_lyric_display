@@ -5,10 +5,8 @@ from urllib.request import urlopen
 import spotify
 class RecentSongsRenderer:
 
-    def __init__(self, color_file, height, maxWidth, font):
+    def __init__(self, color_file, height, width, font):
         self.color_file = color_file
-        self.maxWidth = maxWidth
-        self.width = maxWidth
         self.height = height
         self.recently_played_songs = []
         self.boxes = {}
@@ -16,6 +14,12 @@ class RecentSongsRenderer:
         self.font = font
         self.cover_urls_img_data = {}
         self.highlightedIdx = -1
+        self.time = 0
+        self.animate = True
+        self.setWidth(width)
+
+    def setWidth(self, width):
+        self.width = width
 
     def drawBox(self, surface, pos, size, songname, artist, textPos, highlighted):
         text_song = self.font.render(songname, True, self.color_file.getColor('recentlyplayed.text.title'), None)
@@ -50,7 +54,9 @@ class RecentSongsRenderer:
             box = self.boxes[key]
             if 'hitbox' in box:
                 if box['hitbox'].collidepoint(mousePos):
+                    self.animate = False
                     return box
+        self.animate = True
 
     def boxClicked(self, box, mouseButton):
         if mouseButton == 1:
@@ -62,12 +68,13 @@ class RecentSongsRenderer:
     def renderToSurface(self):
         surface = pygame.Surface((self.width, self.height))
         surface.set_colorkey(self.color_file.getColor('TRANSPARENT_KEY_COLOR'))
+        if self.animate:
+            self.time = self.time + 0.3
 
         if self.recently_played_songs:
-            box_amount = math.floor(self.width / self.boxWidth)
-            for songIdx in range(box_amount):
+            for songIdx in range(len(self.recently_played_songs)):
                 if songIdx < len(self.recently_played_songs):
-                    xOffset = (self.boxWidth + 5) * songIdx
+                    xOffset = (self.boxWidth + 5) * songIdx - (self.time % (len(self.recently_played_songs) * (self.boxWidth + 5) - self.width))
                     song = self.recently_played_songs[songIdx]
                     songname = song['name']
                     artists = song['artists']
