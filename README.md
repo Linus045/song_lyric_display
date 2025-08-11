@@ -1,5 +1,12 @@
-# Installation on Windows (Requires Python 3)
+# Spotify lyric display
 
+Searches up the lyrics for the current song (from Genius.com) and shows it.
+The top bar shows lists songs of the song's album to select and play directly.
+The left sidebar features the song cover as well as controls to pause/skip the song, adjust audio and
+change the output device (other connected spotify clients e.g. when the app is opened on the phone and PC).
+<img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/4263ca50-6677-44d4-8525-843968e3044d" />
+
+# Installation on Windows (Requires Python 3)
 # Step 1: Create .env files to store the required api keys
 Create a file .env with the following exports in the root directory and fill the blank values.
 
