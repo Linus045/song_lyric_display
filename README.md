@@ -1,6 +1,6 @@
 # Spotify lyric display
 
-Searches up the lyrics for the current song (from Genius.com) and shows it.
+Searches up the lyrics for the song currently playing on spotify (from Genius.com) and shows it.
 The top bar shows lists songs of the song's album to select and play directly.
 The left sidebar features the song cover as well as controls to pause/skip the song, adjust audio and
 change the output device (other connected spotify clients e.g. when the app is opened on the phone and PC).
