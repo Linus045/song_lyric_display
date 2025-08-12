@@ -516,6 +516,7 @@ def main():
                 renderer.setMaxWidth(width - (coverPos[0] + coverImgSize[0] + 20 + 80))
             elif event.type == pygame.MOUSEMOTION:
                 if draggingVolumeSlider:
+                    mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
                     volume_slider_renderer.update_value(mouse_pos[0])
                 if songDetectorThread.is_song_active():
                     mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
