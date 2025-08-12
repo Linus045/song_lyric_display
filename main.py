@@ -1,11 +1,9 @@
 import pygame
 import sys
 import os
-import spotipy
-import spotipy.util as util
 import time
 from dotenv import load_dotenv
-from pygame.locals import color, Rect
+from pygame.locals import Rect
 import spotify
 import genius
 import lyricRenderer 
