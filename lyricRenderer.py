@@ -20,18 +20,27 @@ class LyricRenderer():
             newLines = []
         if self.lyricFont.size(line)[0] > self.maxWidth:
             oldWords = line.split()
-            newLine = ''
             if len(oldWords) > 0:
+                newLine = ''
+
                 for wordIdx, word in enumerate(oldWords):
-                    if (self.lyricFont.size(newLine + word)[0] < self.maxWidth):
-                        if newLine == '':
-                            newLine = word
-                        else:
-                            newLine += ' ' + word
+                    potentialNewLine = newLine + (' ' if newLine else '') + word
+                    if (self.lyricFont.size(potentialNewLine)[0] < self.maxWidth):
+                        newLine = potentialNewLine
                     else:
                         break
-                newLines.append(newLine)
-                self.splitLine(" ".join(oldWords[wordIdx:]), newLines)
+
+                if newLine == '':
+                    # No words fit - append the first word and recurse on rest if any
+                    newLines.append(oldWords[wordIdx])
+                    rest = oldWords[wordIdx+1:]
+                    if rest:
+                        self.splitLine(" ".join(rest), newLines)
+                else:
+                    newLines.append(newLine)
+                    rest = oldWords[wordIdx:]
+                    if rest:
+                        self.splitLine(" ".join(rest), newLines)
         else:
             newLines.append(line)
         return newLines
