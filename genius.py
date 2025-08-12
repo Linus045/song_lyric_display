@@ -14,7 +14,7 @@ def getLyric(songname, artist):
             bracketStart = songname.find("(")
             bracketEnd = songname.find(")")
         songname = songname.replace('  ', ' ')
-        song = genius.search_song(songname, artist, get_full_info=False)
+        song = genius.search_song(songname, artist.strip(), get_full_info=False)
         return song.lyrics
     except:
         return "No lyrics found..."
