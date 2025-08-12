@@ -8,7 +8,7 @@ def getSong():
     username = os.getenv("SPOTIPY_ACCOUNT_NAME")
     token = util.prompt_for_user_token(username, scope)
     songName = ""
-    songLength = 0
+    song_duration_ms = 0
     songImgURl = None
     albumURI = ""
     if token:
@@ -17,12 +17,12 @@ def getSong():
         if results != None:
             if results['item']:
                 songName = results['item']['name']
-                songLength = results['item']['duration_ms']
+                song_duration_ms = results['item']['duration_ms']
                 songImgURl = results['item']['album']['images'][0]['url']
                 albumURI = results['item']['album']['id']
     else:
         print("Can't get token for", username)
-    return songName, songLength, songImgURl, albumURI
+    return songName, song_duration_ms, songImgURl, albumURI
 
 
 def getArtists():

@@ -10,6 +10,8 @@ class LyricRenderer():
         self.width = 0
         self.height = 0
         self.maxWidth = 0
+        self.lyrics_surfaces = []
+
 
     def setFont(self, font):
         self.lyricFont = font
@@ -56,7 +58,6 @@ class LyricRenderer():
         if self.lyrics:
             self.lines = self.makeLines(self.lyrics)
             self.height = len(self.lines) * self.lyricFont.get_height()
-            self.lyrics_surfaces = []
             for line in self.lines:
                 lineLength = self.lyricFont.size(line)[0]
                 if lineLength > self.width:

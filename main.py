@@ -15,11 +15,16 @@ import controlsRenderer
 import sliderRenderer
 import devices_renderer
 import recentSongsRenderer
+import threading
 
 if sys.platform == 'win32':
     import win32gui
     import win32con
     import win32api
+
+# target FPS
+FPS = 60
+clock = None
 
 config = None
 color_file = colors.Colors()
@@ -28,6 +33,213 @@ smallFont = None
 basicFont = None
 
 filePath = pathlib.Path(__file__).parent.absolute()
+
+
+class SongDataRequestThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.lock = threading.Lock()
+        self.song_name = None
+        self.song_artist = None
+        self.lyrics = None
+        self.result_ready = False
+        # self.songImgURl = None
+        self.spotify_artists = None
+        self.coverImg = None
+        self.songImgURl = None
+        self.coverImgSize = None
+        self.recently_played_songs = None
+        self.isPlaying = None
+        self.startTime = None
+        self.timepassed_ms = None
+        self.isPlaying = None
+        self.device_info = None
+        self.devices = None
+
+
+    def set_lyrics_search_parameters(self, song_name, song_artists):
+        with self.lock:
+            self.song_name = song_name
+            self.song_artist = song_artists
+
+    def set_current_song(self, current_song, albumURI, songImgURl, coverImgSize):
+        with self.lock:
+            self.current_song = current_song
+            self.albumURI = albumURI
+            self.songImgURl = songImgURl
+            self.coverImgSize = coverImgSize
+    
+    def run(self):
+        song_name = None
+        song_artist = None
+        albumURI = None
+        songImgURl = None
+        coverImgSize = None
+
+        with self.lock:
+            songImgURl = self.songImgURl
+            albumURI = self.albumURI
+            coverImgSize = self.coverImgSize
+            song_name = self.song_name
+            song_artist = self.song_artist
+
+        lyrics = genius.getLyric(song_name,song_artist)
+        spotify_artists = spotify.getArtists()
+        devices = spotify.getAvailableDevices()
+        spotify_top_list = spotify.get_top_list()
+        startTime, timepassed_ms, isPlaying, device_info = spotify.getCurrentSongInfo()
+
+        album = None
+        if config['showOnTopSlider'] == 'album' and albumURI:
+            album = spotify.get_album(albumURI)
+
+        if songImgURl:
+            imgPath = str(filePath.joinpath('coverImg.jpg'))
+            urllib.request.urlretrieve(songImgURl, imgPath)
+            imgLoaded = pygame.transform.scale(pygame.image.load(imgPath), coverImgSize)
+
+        with self.lock:
+            self.coverImg = imgLoaded
+            self.lyrics = lyrics
+            self.spotify_artists = spotify_artists
+            self.devices = devices
+
+            if album:
+                if album['album_type'] == 'single':
+                    self.recently_played_songs = spotify.get_recently_played()
+                else:
+                    self.recently_played_songs = album['tracks']['items']
+            elif config['showOnTopSlider'] == 'top_tracks':
+                self.recently_played_songs = spotify_top_list
+
+            self.startTime = startTime
+            self.timepassed_ms = timepassed_ms
+            self.isPlaying = isPlaying
+            self.device_info = device_info
+
+            self.result_ready = True
+    
+    def get_device_info(self):
+        with self.lock:
+            return self.device_info
+
+    def get_coverImg(self):
+        with self.lock:
+            return self.coverImg
+
+    def get_startTime(self):
+        with self.lock:
+            return self.startTime
+
+    def get_isPlaying(self):
+        with self.lock:
+            return self.isPlaying
+    
+    def get_recently_played_songs(self):
+        with self.lock:
+            return self.recently_played_songs
+
+    def get_spotify_artists(self):
+        with self.lock:
+            return self.spotify_artists
+
+    def is_result_ready(self):
+        with self.lock:
+            return self.result_ready
+
+    def get_lyrics(self):
+        with self.lock:
+            return self.lyrics
+
+    def get_devices(self):
+        with self.lock:
+            return self.devices
+
+    def get_timepassed_ms(self):
+        with self.lock:
+            return self.timepassed_ms
+
+
+
+
+class SongChangedDetectorThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.lock = threading.Lock()
+
+        self.song_active = False
+        self.song_changed = False
+
+        self.oldSongName = None
+        self.newSongName = None
+        self.song_duration_ms= None
+        self.songImgURl = None
+        self.albumURI = None
+        self.running = True
+        self.nextCheck = 10
+
+
+    def run(self):
+        while self.running:
+            print("[API] Retrieving spotify current song...")
+            newSongName, song_duration_ms, songImgURl, albumURI = spotify.getSong()
+
+            with self.lock:
+                self.newSongName = newSongName 
+                self.song_duration_ms = song_duration_ms
+                self.songImgURl = songImgURl
+                self.albumURI = albumURI
+
+                if self.newSongName == "":
+                    self.song_active = False
+                    print("[Updated] No song playing...")
+                elif self.oldSongName != self.newSongName:
+                    print("[Updated] New Song detected...")
+                    self.oldSongName = self.newSongName
+                    self.song_active = True
+                    self.song_changed = True
+
+            # release lock and wait for next check
+            time.sleep(self.nextCheck)
+
+    def set_detector_active(self):
+        with self.lock:
+            self.running = True
+
+    def set_detector_offline(self):
+        with self.lock:
+            self.running = False
+
+    def get_album_URI(self):
+        with self.lock:
+            return self.albumURI
+
+    def get_songImg_URI(self):
+        with self.lock:
+            return self.songImgURl
+        
+
+    def is_song_active(self):
+        with self.lock:
+            return self.song_active
+        
+    def get_current_song(self):
+        with self.lock:
+            return self.newSongName
+
+
+    def reset_song_changed(self):
+        with self.lock:
+            self.song_changed = False
+
+    def has_song_changed(self):
+        with self.lock:
+            return self.song_changed
+        
+    def get_song_duration_ms(self):
+        with self.lock:
+            return self.song_duration_ms
+
 
 def loadConfig():
     config = None
@@ -76,6 +288,8 @@ def main():
     load_dotenv(str(filePath.joinpath('.env')))
     config = loadConfig()
     color_file.loadColors(filePath)
+
+    clock = pygame.time.Clock()
 
     # set up pygame
     pygame.display.init()
@@ -135,30 +349,30 @@ def main():
     # set up the text
     textSong = None
     textArtists = None
-    textLyric = None
-
-    oldSongName = ""
-
-    start = time.time()
-    interval = 3
-    nextCheck = start + 1
 
     # run the game loop
     startTime = 0
-    timepassed_ms = 0
     isPlaying = False
-    songLength = 300
+    song_duration_ms = 0
     device_info = None
 
     ratio = 0
-    songActive = False
-    coverImg = None
+    timepassed_ms = 0
 
     timeSongStart = 0
+    timeLastFrame = 0
+    coverImg = None
+
     draggingVolumeSlider = False
-    recently_played_songs = None
-    albumURI = ""
-    album = None
+
+    songDetectorThread = SongChangedDetectorThread()
+    songDetectorThread.set_detector_active()
+    songDetectorThread.start()
+    
+    songDataRequestThread = None
+    refresh_interval = 10 # every 10 seconds see if something changed (e.g. skips in timeline)
+    last_check = 0
+
     while True:
         # draw the white background onto the surface
         windowSurface.fill(color_file.getColor('BACKGROUND'))
@@ -171,83 +385,108 @@ def main():
 
         recentlyPlayedSongsSurface = recent_songs_renderer.renderToSurface()
         windowSurface.blit(recentlyPlayedSongsSurface, recentlyPlayedSongsPos)
-        if time.time() >= nextCheck:
-            nextCheck += interval
-            newSongName, songLength, songImgURl, albumURI = spotify.getSong()
 
-            if newSongName == "":
-                songActive = False
-                print("[Updated] No song playing...")
-            elif oldSongName != newSongName:
-                oldSongName = newSongName
-                songActive = True
-                # TODO: request data in seperate thread so the program doesn't freeze
-                textSong = basicFont.render(newSongName, True, color_file.getColor('player.title'), None)
-                textArtists = basicFont.render(spotify.getArtists(), True, color_file.getColor('player.artist'), None)
-                lyrics = genius.getLyric(newSongName, spotify.getFirstArtist())
-                renderer.setLyric(lyrics)
-                if songImgURl:
-                    imgPath = str(filePath.joinpath('coverImg.jpg'))
-                    urllib.request.urlretrieve(songImgURl, imgPath)
-                    coverImg = pygame.image.load(imgPath)
-                    coverImg = pygame.transform.scale(coverImg, coverImgSize)
-                print("[Updated] {}".format(newSongName))
-                timeSongStart = time.time()
-                if config['showOnTopSlider'] == 'album' and albumURI:
-                    album = spotify.get_album(albumURI)
-                    if album['album_type'] == 'single':
-                        recently_played_songs = spotify.get_recently_played()
-                    else:
-                        recently_played_songs = album['tracks']['items']
-                elif config['showOnTopSlider'] == 'top_tracks':
-                    recently_played_songs = spotify.get_top_list()
-                
-                if recently_played_songs:
-                    recent_songs_renderer.recently_played_songs = recently_played_songs
-                recent_songs_renderer.time = 0
 
-                labelWidth = max(titlePos[0] + textSong.get_width(), artistPos[0] + textArtists.get_width())
-                xPos = max(coverPos[0] + coverImgSize[0] + 20, labelWidth)
-                minWidth = width - xPos
-                recent_songs_renderer.setWidth(minWidth)
-                recentlyPlayedSongsPos = (xPos, recentlyPlayedSongsPos[1])
-            devices = spotify.getAvailableDevices()
+        if (songDataRequestThread != None) and (songDataRequestThread.is_result_ready()):
+            lyrics = songDataRequestThread.get_lyrics()
+            artists = songDataRequestThread.get_spotify_artists()
+
+            renderer.setLyric(lyrics)
+            textSong = basicFont.render(current_song, True, color_file.getColor('player.title'), None)
+            textArtists = basicFont.render(artists, True, color_file.getColor('player.artist'), None)
+            coverImg = songDataRequestThread.get_coverImg()
+
+            recently_played_songs = songDataRequestThread.get_recently_played_songs()
+            if recently_played_songs:
+                recent_songs_renderer.recently_played_songs = recently_played_songs
+            recent_songs_renderer.time = 0
+
+            song_duration_ms = songDetectorThread.get_song_duration_ms()
+
+            labelWidth = max(titlePos[0] + textSong.get_width(), artistPos[0] + textArtists.get_width())
+            xPos = max(coverPos[0] + coverImgSize[0] + 20, labelWidth)
+            minWidth = width - xPos
+            recent_songs_renderer.setWidth(minWidth)
+            recentlyPlayedSongsPos = (xPos, recentlyPlayedSongsPos[1])
+
+            devices = songDataRequestThread.get_devices()
             if devices:
                 device_selector_renderer.devices = devices
 
-            startTime, timepassed_ms, isPlaying, device_info = spotify.getCurrentSongInfo()
+            isPlaying = songDataRequestThread.get_isPlaying()
             controls_renderer.songPlaying = isPlaying
+            device_info = songDataRequestThread.get_device_info()
             if device_info:
                 current_volume = device_info['volume_percent']
                 volume_slider_renderer.currentNormalized = current_volume/100
-        if songActive:
-            # TODO: Set fixed framerate
-            timeSince = time.time() - timeSongStart
-            if isPlaying:
-                timepassed_ms += timeSince * 1000
-            timeSongStart = time.time()
-            # draw the text onto the surface
+
+            new_timepassed_ms = songDataRequestThread.get_timepassed_ms()
+            if abs(new_timepassed_ms - timepassed_ms) > 5000:
+                print("timepassed_ms spotify:", new_timepassed_ms, " current timepassed:", timepassed_ms, " SYNCHING diff of: ", (new_timepassed_ms - timepassed_ms) / 1000, " seconds"  )
+                timepassed_ms = new_timepassed_ms
+
+            songDataRequestThread.join()
+            songDataRequestThread = None
+
+        # draw the text onto the surface
+        if textSong:
             windowSurface.blit(textSong, titlePos)
+        if textArtists:
             windowSurface.blit(textArtists, artistPos)
 
-            #generate the lyric surface and draw it 
-            ratio = timepassed_ms / songLength
-            heightOffset = height / 2 - renderer.height/1 * ratio
-            lyricSurface = renderer.renderToSurface(Rect(0, artistPos[1] + basicFont.get_height() - heightOffset, renderer.width, height - 120))
-            windowSurface.blit(lyricSurface, (coverPos[0] + coverImgSize[0] + 20, heightOffset))
+       
 
-            #draw the album cover image
-            if coverImg:
-                windowSurface.blit(coverImg, coverPos)
+        current_song = songDetectorThread.get_current_song()
+        albumURI = songDetectorThread.get_album_URI()
+        songImgURI = songDetectorThread.get_songImg_URI()
+
+        if current_song == "":
+            print("[Updated] No song playing...")
+            textSong = basicFont.render("No song playing...", True, color_file.getColor('player.lyrics'), None)
+            windowSurface.blit(textSong, titlePos)
+        elif songDetectorThread.has_song_changed():
+            songDetectorThread.reset_song_changed()
+   
+            print("[Updated] {}".format(current_song))
+            if albumURI and songImgURI:
+                songDataRequestThread = SongDataRequestThread()
+                songDataRequestThread.set_lyrics_search_parameters(current_song, spotify.getFirstArtist())
+                songDataRequestThread.set_current_song(current_song, albumURI, songImgURI, coverImgSize)
+                songDataRequestThread.start()
+        elif time.time() > last_check + refresh_interval:
+            last_check = time.time()
+            if current_song and albumURI and songImgURI:
+                songDataRequestThread = SongDataRequestThread()
+                songDataRequestThread.set_lyrics_search_parameters(current_song, spotify.getFirstArtist())
+                songDataRequestThread.set_current_song(current_song, albumURI, songImgURI, coverImgSize)
+                songDataRequestThread.start()
+
+
+        # TODO: Set fixed framerate
+        timeNow = time.time()
+        timeDelta = timeNow - timeLastFrame
+        timeLastFrame = timeNow
+        if isPlaying:
+            timepassed_ms += timeDelta * 1000
+        # print("timepassed_ms now: ", timepassed_ms)
+
+        #generate the lyric surface and draw it
+        ratio = 0
+        if song_duration_ms:
+            ratio = timepassed_ms / song_duration_ms
+        heightOffset = height / 2 - renderer.height/1 * ratio
+        lyricSurface = renderer.renderToSurface(Rect(0, artistPos[1] + basicFont.get_height() - heightOffset, renderer.width, height - 120))
+        windowSurface.blit(lyricSurface, (coverPos[0] + coverImgSize[0] + 20, heightOffset))
+
+        #draw the album cover image
+        if coverImg:
+            windowSurface.blit(coverImg, coverPos)
 
             #draw the progress bar
             playingbarRect = Rect(20, height-20, width - 40, 6)
             pygame.draw.rect(windowSurface, color_file.getColor('player.playingbar.background'), playingbarRect)
             currentRect = Rect(playingbarRect.left, playingbarRect.top, playingbarRect.width * ratio, playingbarRect.height)
             pygame.draw.rect(windowSurface, color_file.getColor('player.playingbar'), currentRect)
-        else:
-            textSong = basicFont.render("No song playing...", True, color_file.getColor('player.lyrics'), None)
-            windowSurface.blit(textSong, titlePos)
 
         # update the window
         pygame.display.update()
@@ -255,10 +494,18 @@ def main():
         #handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                songDetectorThread.set_detector_offline()
+                songDetectorThread.join()
+
+                if songDataRequestThread:
+                    songDataRequestThread.join()
+
                 pygame.display.quit()
                 sys.exit(0)
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    songDetectorThread.set_detector_offline()
+                    songDetectorThread.join()
                     pygame.display.quit()
                     sys.exit(0)
             elif event.type == pygame.VIDEORESIZE:
@@ -270,7 +517,7 @@ def main():
             elif event.type == pygame.MOUSEMOTION:
                 if draggingVolumeSlider:
                     volume_slider_renderer.update_value(mouse_pos[0])
-                if songActive:
+                if songDetectorThread.is_song_active():
                     mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
                     controls_renderer.highlightPlaybutton = controls_renderer.playButtonRect.collidepoint(mouse_pos)
                     controls_renderer.highlightPreviousbutton = controls_renderer.previousButtonRect.collidepoint(mouse_pos)
@@ -289,7 +536,7 @@ def main():
                     if volume_slider_renderer.borderRect.collidepoint(mouse_pos):
                         volume_slider_renderer.update_value(mouse_pos[0])
                         draggingVolumeSlider = True
-                if not draggingVolumeSlider and songActive:
+                if not draggingVolumeSlider and songDetectorThread.is_song_active():
                     if device_info:
                         mouse_pos = (event.pos[0] - controlsPos[0], event.pos[1] - controlsPos[1]) 
                         if controls_renderer.playButtonRect.collidepoint(mouse_pos):
@@ -319,5 +566,6 @@ def main():
                     if clicked_box:
                         recent_songs_renderer.boxClicked(clicked_box, event.button)
 
+        clock.tick(FPS)
 if __name__ == '__main__':
     main()
